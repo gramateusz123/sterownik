@@ -14,36 +14,48 @@ LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
 #define LEFT 11
 #define RIGHT 10
 
-#define R1_BACK_DURATION_TIME_ADDR 0
-#define R2_BACK_DELAY_TIME_ADDR 4
-#define R2_BACK_DURATION_TIME_ADDR 6
-#define R3_BACK_DELAY_TIME_ADDR 10
-#define R3_BACK_DURATION_TIME_ADDR 12
+#define R1_BACK_DURATION 0
+#define R2_BACK_DELAY 4
+#define R2_BACK_DURATION 6
+#define R3_BACK_DELAY 10
+#define R3_BACK_DURATION 12
 
-#define R1_FORWARD_DURATION_TIME_ADDR 2
-#define R2_FORWARD_DELAY_TIME_ADDR 8
-#define R3_FORWARD_DELAY_TIME_ADDR 14
-#define R3_FORWARD_DURATION_TIME_ADDR 16
+#define R1_FORWARD_DURATION 2
+#define R2_FORWARD_DELAY 8
+#define R3_FORWARD_DELAY 14
+#define R3_FORWARD_DURATION 16
 
 #define TRESHOLD_VALUE 18
-
 #define acs712 A0
 long lastSample = 0;
 long sampleSum = 0;
 int sampleCount = 0;
 float vpc = 4.8828125;
+// TODO: transform menu to object [{ name: "", address: R1_FORWARD_ETC }]
+String menu[] = {
+  "Prad graniczny",
+  "R1_BACK_DURATION",
+  "R1_FORWARD_DURATION",
+  "R2_BACK_DELAY",
+  "R2_BACK_DURATION",
+  "R2_FORWARD_DELAY",
+  "R3_BACK_DELAY",
+  "R3_BACK_DURATION",
+  "R3_FORWARD_DELAY",
+  "R3_FORWARD_DURATION"
+};
 
 void setup() {
 
-  EEPROM.put(R1_BACK_DURATION_TIME_ADDR, 00);
-  EEPROM.put(R2_BACK_DELAY_TIME_ADDR, 100);
-  EEPROM.put(R2_BACK_DURATION_TIME_ADDR, 5000);
-  EEPROM.put(R3_BACK_DELAY_TIME_ADDR, 200);
-  EEPROM.put(R3_BACK_DURATION_TIME_ADDR, 5000);
-  EEPROM.put(R1_FORWARD_DURATION_TIME_ADDR, 300);
-  EEPROM.put(R2_FORWARD_DELAY_TIME_ADDR, 100);
-  EEPROM.put(R3_FORWARD_DELAY_TIME_ADDR, 200);
-  EEPROM.put(R3_FORWARD_DURATION_TIME_ADDR, 10000);
+  EEPROM.put(R1_BACK_DURATION, 00);
+  EEPROM.put(R2_BACK_DELAY, 100);
+  EEPROM.put(R2_BACK_DURATION, 5000);
+  EEPROM.put(R3_BACK_DELAY, 200);
+  EEPROM.put(R3_BACK_DURATION, 5000);
+  EEPROM.put(R1_FORWARD_DURATION, 300);
+  EEPROM.put(R2_FORWARD_DELAY, 100);
+  EEPROM.put(R3_FORWARD_DELAY, 200);
+  EEPROM.put(R3_FORWARD_DURATION, 10000);
   EEPROM.put(TRESHOLD_VALUE, 0.9f);
 
   Serial.begin(9600);
@@ -74,12 +86,14 @@ void loop() {
   }
 
   //float currentApmerage = measureAmperage();
-  float treshold = 0.0f;
+  float treshold = 0.9f;
   EEPROM.get(TRESHOLD_VALUE, treshold);
   Serial.println(currentApmerage);
 
   lcd.setCursor(0, 0);
   lcd.print("Aktualny prad:");
+  lcd.setCursor(0, 1);
+  lcd.print("                ");
   lcd.setCursor(0, 1);
   lcd.print(currentApmerage);
   lcd.print(" A");
@@ -99,7 +113,7 @@ void loop() {
     }
   }
 
-//  currentApmerage += 0.1f;
+  //  currentApmerage += 0.1f;
   //  delay(1000);
 }
 
@@ -131,11 +145,11 @@ void moveBack() {
   int R1durationTime = 0;
   int R2durationTime = 0;
   int R3durationTime = 0;
-  EEPROM.get(R2_BACK_DELAY_TIME_ADDR, R2delayTime);
-  EEPROM.get(R3_BACK_DELAY_TIME_ADDR, R3delayTime);
-  EEPROM.get(R1_BACK_DURATION_TIME_ADDR, R1durationTime);
-  EEPROM.get(R2_BACK_DURATION_TIME_ADDR, R2durationTime);
-  EEPROM.get(R3_BACK_DURATION_TIME_ADDR, R3durationTime);
+  EEPROM.get(R2_BACK_DELAY, R2delayTime);
+  EEPROM.get(R3_BACK_DELAY, R3delayTime);
+  EEPROM.get(R1_BACK_DURATION, R1durationTime);
+  EEPROM.get(R2_BACK_DURATION, R2durationTime);
+  EEPROM.get(R3_BACK_DURATION, R3durationTime);
 
   digitalWrite(R1, LOW); // r1 on
   delay(R2delayTime);
@@ -160,9 +174,9 @@ bool testMovement() {
   int R3delayTime = 0;
   float treshold = 0.0f;
 
-  EEPROM.get(R1_FORWARD_DURATION_TIME_ADDR, R1durationTime);
-  EEPROM.get(R3_FORWARD_DURATION_TIME_ADDR, R3durationTime);
-  EEPROM.get(R3_FORWARD_DELAY_TIME_ADDR, R3delayTime);
+  EEPROM.get(R1_FORWARD_DURATION, R1durationTime);
+  EEPROM.get(R3_FORWARD_DURATION, R3durationTime);
+  EEPROM.get(R3_FORWARD_DELAY, R3delayTime);
   EEPROM.get(TRESHOLD_VALUE, treshold);
 
   digitalWrite(R1, LOW); // r1 on
@@ -201,40 +215,100 @@ bool watch(bool& shouldRun, int& duration, float treshold, unsigned long start) 
   return false;
 }
 
-void showMenu() {
+void printToLCD(int row, String text) {
+  lcd.setCursor(0, row);
+  lcd.print("                ");
+  lcd.setCursor(0, row);
+  lcd.print(text);
+}
+
+void showSubmenu(String submenu) {
   bool showMenu = true;
   int enter = 0;
   int left = 0;
-   int right = 0;
-   int cancel = 0;
+  int right = 0;
+  int cancel = 0;
+  int value;
+  float currentValue;
+  bool isTimeValue = submenu == menu[0];
+  printToLCD(0, submenu);
+  if (isTimeValue) {
+    value = digitalRead(submenu);
+    printToLCD(0, value + " ms");
+  } else {
+    currentValue = digitalRead(submenu);
+    printToLCD(0, currentValue + " A");
+  }
   while (showMenu) {
     enter = digitalRead(ENTER);
     left = digitalRead(LEFT);
     right = digitalRead(RIGHT);
     cancel = digitalRead(CANCEL);
     if (enter == HIGH) {
-      lcd.setCursor(0, 1);
-      lcd.print("                ");
-      lcd.setCursor(0, 1);
-      lcd.print("ENTER");
+      Serial.println("ENTER");
     }
     if (left == HIGH) {
-      lcd.setCursor(0, 1);
-      lcd.print("                ");
-      lcd.setCursor(0, 1);
-      lcd.print("LEFT");
+      if (cnt != 0) {
+        cnt--;
+      } else {
+        cnt = 9;
+      }
+      printToLCD(1, menu[cnt]);
+      Serial.println("LEFT");
     }
     if (right == HIGH) {
-      lcd.setCursor(0, 1);
-      lcd.print("                ");
-      lcd.setCursor(0, 1);
-      lcd.print("RIGHT");
+      if (cnt < 10) {
+        cnt++;
+      } else {
+        cnt = 0;
+      }
+      printToLCD(1, menu[cnt]);
+      Serial.println("RIGHT");
     }
     if (cancel == HIGH) {
-      lcd.setCursor(0, 1);
-      lcd.print("                ");
-      lcd.setCursor(0, 1);
-      lcd.print("CANCEL");
+      Serial.println("CANCEL");
+      showMenu = false;
+    }
+  }
+}
+
+void showMenu() {
+  bool showMenu = true;
+  int cnt = 0;
+  int enter = 0;
+  int left = 0;
+  int right = 0;
+  int cancel = 0;
+  printToLCD(0, "MENU");
+  printToLCD(1, menu[cnt]);
+  while (showMenu) {
+    enter = digitalRead(ENTER);
+    left = digitalRead(LEFT);
+    right = digitalRead(RIGHT);
+    cancel = digitalRead(CANCEL);
+    if (enter == HIGH) {
+      Serial.println("ENTER");
+    }
+    if (left == HIGH) {
+      if (cnt != 0) {
+        cnt--;
+      } else {
+        cnt = 9;
+      }
+      printToLCD(1, menu[cnt]);
+      Serial.println("LEFT");
+    }
+    if (right == HIGH) {
+      if (cnt < 10) {
+        cnt++;
+      } else {
+        cnt = 0;
+      }
+      printToLCD(1, menu[cnt]);
+      Serial.println("RIGHT");
+    }
+    if (cancel == HIGH) {
+      Serial.println("CANCEL");
       showMenu = false;
     }
   }
